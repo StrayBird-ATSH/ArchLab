@@ -50,36 +50,42 @@
 0x08e: c0f60800000000000000 | 	iaddq $8, %rsi          # dst = dst + 1 (move 8 bytes, i.e. 1 word forward)
 0x098: c0f2ffffffffffffffff | 	iaddq $-1, %rdx         # len = len - 1
 0x0a2: 705100000000000000   | 	jmp Rest                # See whether len > 0
+                            | 
+                            | ########-----Loop Seperater-------################################
+                            | 
+                            | 
 0x0ab:                      | Loop:
 0x0ab: 50170000000000000000 | 	mrmovq (%rdi), %rcx	    # save the first element from memory to register %rcx
 0x0b5: c0f72800000000000000 | 	iaddq $40, %rdi		    # src = src + 5 (move 40 bytes, i.e. 5 words forward)
-0x0bf: 40160000000000000000 | 	rmmovq %rcx, (%rsi)     # save the value to the destination memory
-0x0c9: 6211                 | 	andq %rcx, %rcx		    # test %rcx
-0x0cb: 71de00000000000000   | 	jle ADD1			    # if the value is no greater than 0, then do not increment %rax
-0x0d4: c0f00100000000000000 | 	iaddq $1, %rax		    # add the number of postive numbers
-0x0de:                      | ADD1:
-0x0de: 5017e0ffffffffffffff | 	mrmovq -32(%rdi), %rcx	# save the second element from memory to register %rcx
-0x0e8: c0f62800000000000000 | 	iaddq $40, %rsi			# dst = dst + 5 (move 40 bytes, i.e. 5 words forward)
-0x0f2: 4016e0ffffffffffffff | 	rmmovq %rcx, -32(%rsi)	# save the second value to the destination memory
-0x0fc: 6211                 | 	andq %rcx, %rcx			# test for future reference
-0x0fe: 5017e8ffffffffffffff | 	mrmovq -24(%rdi), %rcx  # to avoid load/use hazard, this read memory instruction is advanced
-0x108: 711b01000000000000   | 	jle ADD2				# if the value is no greater than 0, then do not increment %rax
-0x111: c0f00100000000000000 | 	iaddq $1, %rax			# add the number of postive numbers
-0x11b:                      | ADD2:
-0x11b: 4016e8ffffffffffffff | 	rmmovq %rcx, -24(%rsi)  # save the third value to the destination memory
-0x125: 6211                 | 	andq %rcx, %rcx         # test for future reference
-0x127: 5017f0ffffffffffffff | 	mrmovq -16(%rdi), %rcx  # to avoid load/use hazard, this read memory instruction is advanced
-0x131: 714401000000000000   | 	jle ADD3                # if the value is no greater than 0, then do not increment %rax
-0x13a: c0f00100000000000000 | 	iaddq $1, %rax          # add the number of postive numbers
-0x144:                      | ADD3:
-0x144: 4016f0ffffffffffffff | 	rmmovq %rcx, -16(%rsi)  # save the forth value to the destination memory
-0x14e: 6211                 | 	andq %rcx, %rcx         # test for future reference
-0x150: 5017f8ffffffffffffff | 	mrmovq -8(%rdi), %rcx   # to avoid load/use hazard, this read memory instruction is advanced
+0x0bf: c0f62800000000000000 | 	iaddq $40, %rsi			# dst = dst + 5 (move 40 bytes, i.e. 5 words forward)
+0x0c9: 5087e0ffffffffffffff | 	mrmovq -32(%rdi), %r8	# save the second element from memory to register %r8
+0x0d3: 4016d8ffffffffffffff | 	rmmovq %rcx, -40(%rsi)  # save the value to the destination memory
+0x0dd: 6211                 | 	andq %rcx, %rcx		    # test %rcx
+0x0df: 71f200000000000000   | 	jle ADD1			    # if the value is no greater than 0, then do not increment %rax
+0x0e8: c0f00100000000000000 | 	iaddq $1, %rax		    # add the number of postive numbers
+0x0f2:                      | ADD1:
+0x0f2: 5097e8ffffffffffffff | 	mrmovq -24(%rdi), %r9  # to avoid load/use hazard, this read memory instruction is advanced
+                            | 
+0x0fc: 4086e0ffffffffffffff | 	rmmovq %r8, -32(%rsi)	# save the second value to the destination memory
+0x106: 6288                 | 	andq %r8, %r8			# test for future reference
+0x108: 50a7f0ffffffffffffff | 	mrmovq -16(%rdi), %r10  # to avoid load/use hazard, this read memory instruction is advanced
+0x112: 712501000000000000   | 	jle ADD2				# if the value is no greater than 0, then do not increment %rax
+0x11b: c0f00100000000000000 | 	iaddq $1, %rax			# add the number of postive numbers
+0x125:                      | ADD2:
+0x125: 4096e8ffffffffffffff | 	rmmovq %r9, -24(%rsi)  # save the third value to the destination memory
+0x12f: 6299                 | 	andq %r9, %r9         # test for future reference
+0x131: 50b7f8ffffffffffffff | 	mrmovq -8(%rdi), %r11   # to avoid load/use hazard, this read memory instruction is advanced
+0x13b: 714e01000000000000   | 	jle ADD3                # if the value is no greater than 0, then do not increment %rax
+0x144: c0f00100000000000000 | 	iaddq $1, %rax          # add the number of postive numbers
+0x14e:                      | ADD3:
+0x14e: 40a6f0ffffffffffffff | 	rmmovq %r10, -16(%rsi)  # save the forth value to the destination memory
+0x158: 62aa                 | 	andq %r10, %r10         # test for future reference
+                            | 
 0x15a: 716d01000000000000   | 	jle ADD4                # if the value is no greater than 0, then do not increment %rax
 0x163: c0f00100000000000000 | 	iaddq $1, %rax          # add the number of postive numbers
 0x16d:                      | ADD4:
-0x16d: 4016f8ffffffffffffff | 	rmmovq %rcx, -8(%rsi)   # save the fifth value to the destination memory
-0x177: 6211                 | 	andq %rcx, %rcx         # test to see if the value is no greater than 0
+0x16d: 40b6f8ffffffffffffff | 	rmmovq %r11, -8(%rsi)   # save the fifth value to the destination memory
+0x177: 62bb                 | 	andq %r11, %r11         # test to see if the value is no greater than 0
 0x179: 718c01000000000000   | 	jle ADD5
 0x182: c0f00100000000000000 | 	iaddq $1, %rax          # add the number of postive numbers
 0x18c:                      | ADD5:
@@ -102,52 +108,52 @@
                             | ###############################
 0x1b0:                      | 	.align 8
 0x1b0:                      | src:
-0x1b0: ffffffffffffffff     | 	.quad -1
+0x1b0: 0100000000000000     | 	.quad 1
 0x1b8: 0200000000000000     | 	.quad 2
-0x1c0: fdffffffffffffff     | 	.quad -3
-0x1c8: fcffffffffffffff     | 	.quad -4
+0x1c0: 0300000000000000     | 	.quad 3
+0x1c8: 0400000000000000     | 	.quad 4
 0x1d0: fbffffffffffffff     | 	.quad -5
-0x1d8: 0600000000000000     | 	.quad 6
-0x1e0: 0700000000000000     | 	.quad 7
-0x1e8: f8ffffffffffffff     | 	.quad -8
+0x1d8: faffffffffffffff     | 	.quad -6
+0x1e0: f9ffffffffffffff     | 	.quad -7
+0x1e8: 0800000000000000     | 	.quad 8
 0x1f0: f7ffffffffffffff     | 	.quad -9
 0x1f8: 0a00000000000000     | 	.quad 10
 0x200: 0b00000000000000     | 	.quad 11
 0x208: 0c00000000000000     | 	.quad 12
 0x210: f3ffffffffffffff     | 	.quad -13
-0x218: f2ffffffffffffff     | 	.quad -14
-0x220: f1ffffffffffffff     | 	.quad -15
-0x228: f0ffffffffffffff     | 	.quad -16
+0x218: 0e00000000000000     | 	.quad 14
+0x220: 0f00000000000000     | 	.quad 15
+0x228: 1000000000000000     | 	.quad 16
 0x230: efffffffffffffff     | 	.quad -17
 0x238: eeffffffffffffff     | 	.quad -18
-0x240: edffffffffffffff     | 	.quad -19
-0x248: ecffffffffffffff     | 	.quad -20
+0x240: 1300000000000000     | 	.quad 19
+0x248: 1400000000000000     | 	.quad 20
 0x250: ebffffffffffffff     | 	.quad -21
 0x258: 1600000000000000     | 	.quad 22
-0x260: 1700000000000000     | 	.quad 23
-0x268: e8ffffffffffffff     | 	.quad -24
-0x270: e7ffffffffffffff     | 	.quad -25
-0x278: 1a00000000000000     | 	.quad 26
-0x280: 1b00000000000000     | 	.quad 27
+0x260: e9ffffffffffffff     | 	.quad -23
+0x268: 1800000000000000     | 	.quad 24
+0x270: 1900000000000000     | 	.quad 25
+0x278: e6ffffffffffffff     | 	.quad -26
+0x280: e5ffffffffffffff     | 	.quad -27
 0x288: 1c00000000000000     | 	.quad 28
-0x290: e3ffffffffffffff     | 	.quad -29
+0x290: 1d00000000000000     | 	.quad 29
 0x298: e2ffffffffffffff     | 	.quad -30
-0x2a0: e1ffffffffffffff     | 	.quad -31
-0x2a8: e0ffffffffffffff     | 	.quad -32
+0x2a0: 1f00000000000000     | 	.quad 31
+0x2a8: 2000000000000000     | 	.quad 32
 0x2b0: 2100000000000000     | 	.quad 33
-0x2b8: 2200000000000000     | 	.quad 34
+0x2b8: deffffffffffffff     | 	.quad -34
 0x2c0: 2300000000000000     | 	.quad 35
 0x2c8: 2400000000000000     | 	.quad 36
 0x2d0: dbffffffffffffff     | 	.quad -37
 0x2d8: daffffffffffffff     | 	.quad -38
 0x2e0: 2700000000000000     | 	.quad 39
-0x2e8: 2800000000000000     | 	.quad 40
-0x2f0: d7ffffffffffffff     | 	.quad -41
+0x2e8: d8ffffffffffffff     | 	.quad -40
+0x2f0: 2900000000000000     | 	.quad 41
 0x2f8: d6ffffffffffffff     | 	.quad -42
 0x300: 2b00000000000000     | 	.quad 43
-0x308: 2c00000000000000     | 	.quad 44
+0x308: d4ffffffffffffff     | 	.quad -44
 0x310: 2d00000000000000     | 	.quad 45
-0x318: d2ffffffffffffff     | 	.quad -46
+0x318: 2e00000000000000     | 	.quad 46
 0x320: d1ffffffffffffff     | 	.quad -47
 0x328: 3000000000000000     | 	.quad 48
 0x330: cfffffffffffffff     | 	.quad -49
@@ -155,16 +161,16 @@
 0x340: cdffffffffffffff     | 	.quad -51
 0x348: ccffffffffffffff     | 	.quad -52
 0x350: cbffffffffffffff     | 	.quad -53
-0x358: caffffffffffffff     | 	.quad -54
-0x360: 3700000000000000     | 	.quad 55
-0x368: 3800000000000000     | 	.quad 56
-0x370: 3900000000000000     | 	.quad 57
-0x378: 3a00000000000000     | 	.quad 58
-0x380: 3b00000000000000     | 	.quad 59
-0x388: 3c00000000000000     | 	.quad 60
-0x390: 3d00000000000000     | 	.quad 61
-0x398: 3e00000000000000     | 	.quad 62
-0x3a0: 3f00000000000000     | 	.quad 63
+0x358: 3600000000000000     | 	.quad 54
+0x360: c9ffffffffffffff     | 	.quad -55
+0x368: c8ffffffffffffff     | 	.quad -56
+0x370: c7ffffffffffffff     | 	.quad -57
+0x378: c6ffffffffffffff     | 	.quad -58
+0x380: c5ffffffffffffff     | 	.quad -59
+0x388: c4ffffffffffffff     | 	.quad -60
+0x390: c3ffffffffffffff     | 	.quad -61
+0x398: c2ffffffffffffff     | 	.quad -62
+0x3a0: c1ffffffffffffff     | 	.quad -63
 0x3a8: fadebc0000000000     | 	.quad 0xbcdefa # This shouldn't get moved
                             | 
 0x3b0:                      | 	.align 16

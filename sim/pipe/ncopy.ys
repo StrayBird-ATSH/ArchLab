@@ -37,36 +37,42 @@ ADD:
 	iaddq $8, %rsi          # dst = dst + 1 (move 8 bytes, i.e. 1 word forward)
 	iaddq $-1, %rdx         # len = len - 1
 	jmp Rest                # See whether len > 0
+
+########-----Loop Seperater-------################################
+
+
 Loop:
 	mrmovq (%rdi), %rcx	    # save the first element from memory to register %rcx
 	iaddq $40, %rdi		    # src = src + 5 (move 40 bytes, i.e. 5 words forward)
-	rmmovq %rcx, (%rsi)     # save the value to the destination memory
+	iaddq $40, %rsi			# dst = dst + 5 (move 40 bytes, i.e. 5 words forward)
+	mrmovq -32(%rdi), %r8	# save the second element from memory to register %r8
+	rmmovq %rcx, -40(%rsi)  # save the value to the destination memory
 	andq %rcx, %rcx		    # test %rcx
 	jle ADD1			    # if the value is no greater than 0, then do not increment %rax
 	iaddq $1, %rax		    # add the number of postive numbers
 ADD1:
-	mrmovq -32(%rdi), %rcx	# save the second element from memory to register %rcx
-	iaddq $40, %rsi			# dst = dst + 5 (move 40 bytes, i.e. 5 words forward)
-	rmmovq %rcx, -32(%rsi)	# save the second value to the destination memory
-	andq %rcx, %rcx			# test for future reference
-	mrmovq -24(%rdi), %rcx  # to avoid load/use hazard, this read memory instruction is advanced
+	mrmovq -24(%rdi), %r9  # to avoid load/use hazard, this read memory instruction is advanced
+
+	rmmovq %r8, -32(%rsi)	# save the second value to the destination memory
+	andq %r8, %r8			# test for future reference
+	mrmovq -16(%rdi), %r10  # to avoid load/use hazard, this read memory instruction is advanced
 	jle ADD2				# if the value is no greater than 0, then do not increment %rax
 	iaddq $1, %rax			# add the number of postive numbers
 ADD2:
-	rmmovq %rcx, -24(%rsi)  # save the third value to the destination memory
-	andq %rcx, %rcx         # test for future reference
-	mrmovq -16(%rdi), %rcx  # to avoid load/use hazard, this read memory instruction is advanced
+	rmmovq %r9, -24(%rsi)  # save the third value to the destination memory
+	andq %r9, %r9         # test for future reference
+	mrmovq -8(%rdi), %r11   # to avoid load/use hazard, this read memory instruction is advanced
 	jle ADD3                # if the value is no greater than 0, then do not increment %rax
 	iaddq $1, %rax          # add the number of postive numbers
 ADD3:
-	rmmovq %rcx, -16(%rsi)  # save the forth value to the destination memory
-	andq %rcx, %rcx         # test for future reference
-	mrmovq -8(%rdi), %rcx   # to avoid load/use hazard, this read memory instruction is advanced
+	rmmovq %r10, -16(%rsi)  # save the forth value to the destination memory
+	andq %r10, %r10         # test for future reference
+
 	jle ADD4                # if the value is no greater than 0, then do not increment %rax
 	iaddq $1, %rax          # add the number of postive numbers
 ADD4:
-	rmmovq %rcx, -8(%rsi)   # save the fifth value to the destination memory
-	andq %rcx, %rcx         # test to see if the value is no greater than 0
+	rmmovq %r11, -8(%rsi)   # save the fifth value to the destination memory
+	andq %r11, %r11         # test to see if the value is no greater than 0
 	jle ADD5
 	iaddq $1, %rax          # add the number of postive numbers
 ADD5:
