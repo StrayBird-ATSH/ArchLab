@@ -30,7 +30,8 @@ ncopy:
 ##################################################################
 # You can modify this portion
 # Loop header
-        iaddq $-4, %rdx		# calculate len - 4
+    xorq %rax,%rax          # count = 0;
+    iaddq $-4, %rdx         # calculate len - 4
 	jg Loop                 # if len >= 4 goto Loop
 
 RESTT:
@@ -103,8 +104,8 @@ EndFun:
 	.align 8
 src:
 	.quad -1
-	.quad -2
-	.quad 3
+	.quad 2
+	.quad -3
 	.quad 4
 	.quad 0xbcdefa # This shouldn't get moved
 
