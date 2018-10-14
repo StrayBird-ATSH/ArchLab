@@ -7,6 +7,17 @@
 # 16307110064
 #
 # Describe how and why you modified the baseline code.
+# The original baseline code is modified in great extension from the following 
+# three perspectives:
+# 1. The straightforward loop is unrolled into five continuous executions. 
+# Therefore, if the data is longer than 5, each loop will do five continuous 
+# copy actions, which can greatly reduce the number of iterations thus reducing 
+# the condition control overhead.
+# 2. There is usually the case that there are remainders that is not a multiple 
+# of 5. In this case, I just made the copy execution in a straight line way 
+# without any iterations. This can reduce the control overhead for this part.
+# 3. Each condition jump is placed and designed carefully to make the prediction 
+# have the best correct possibilities.
 #
 ##################################################################
 # Do not modify this portion
