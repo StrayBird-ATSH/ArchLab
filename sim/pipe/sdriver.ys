@@ -41,16 +41,17 @@ ncopy:
 ##################################################################
 # You can modify this portion
 # Loop header
-    andq %rdx,%rdx
-    jg Continue
-    ret
 
 Continue:
     iaddq $-4, %rdx         # len = len - 4
 	jg Loop                 # if len > 0, then go to Loop
 
-
 Remaining:
+    iaddq $4, %rdx
+    jg Continue1
+    ret
+
+Continue1:
     mrmovq (%rdi), %rcx		# save the first element from memory to register %rcx
     rmmovq %rcx, (%rsi)		# save the value to the destination memory
     andq %rcx, %rcx			# test *src to see whether the value is less than 0
@@ -58,7 +59,7 @@ Remaining:
     iaddq $1, %rax			# add the count of postive numbers
 
 RemComp1:
-    iaddq $3, %rdx         # len = len - 1
+    iaddq $-1, %rdx         # len = len - 1
 	jg RemAdd1          # if len > 0, then the work is not finished yet
 	ret
 
@@ -90,10 +91,8 @@ RemAdd3:
     mrmovq 24(%rdi), %rcx		# save the first element from memory to register %rcx
     rmmovq %rcx, 24(%rsi)		# save the value to the destination memory
     andq %rcx, %rcx			# test *src to see whether the value is less than 0
-    jle RemComp4             # if not greater than 0, jump
+    jle Done             # if not greater than 0, jump
     iaddq $1, %rax			# add the count of postive numbers
-
-RemComp4:
 	ret
 
 ########-----Loop Seperater-------################################
@@ -134,13 +133,6 @@ ADD4:
 ADD5:
 	iaddq $-5, %rdx			# len -= 5 if(len - 4 > 0) that means len > 4
 	jg Loop					# if so, goto Loop:
-
-
-	iaddq $4,%rdx
-	jg   MakeUp
-    ret
-MakeUp:
-    iaddq $-4,%rdx
     jmp Remaining
 
 ##################################################################
@@ -159,9 +151,9 @@ EndFun:
 ###############################
 	.align 8
 src:
-	.quad 1
+	.quad -1
 	.quad -2
-	.quad -3
+	.quad 3
 	.quad 4
 	.quad 0xbcdefa # This shouldn't get moved
 
