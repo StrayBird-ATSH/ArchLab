@@ -43,32 +43,27 @@
                             | ##################################################################
                             | # You can modify this portion
                             | # Loop header
-                            | 
-0x032:                      | Continue:
 0x032: c0f2fcffffffffffffff |     iaddq $-4, %rdx         # len = len - 4
 0x03c: 765901000000000000   | 	jg Loop                 # if len > 0, then go to Loop
                             | 
 0x045:                      | Remaining:
 0x045: c0f20400000000000000 |     iaddq $4, %rdx
-0x04f: 765900000000000000   |     jg Continue1
+0x04f: 765900000000000000   |     jg Continue
 0x058: 90                   |     ret
                             | 
-0x059:                      | Continue1:
+0x059:                      | Continue:
 0x059: 50170000000000000000 |     mrmovq (%rdi), %rcx		# save the first element from memory to register %rcx
-                            | 
 0x063: c0f2ffffffffffffffff |     iaddq $-1, %rdx         # len = len - 1
-0x06d: 769600000000000000   |     jg RemAddFirstNotEnd          # if len > 0, then the work is not finished yet
-                            | 
+0x06d: 769600000000000000   |     jg RemAddFirstNotEnd    # if len > 0, then the work is not finished yet
                             | 
 0x076:                      | RemAddFirstEnd:
-0x076: 40160000000000000000 |         rmmovq %rcx, (%rsi)		# save the value to the destination memory
-0x080: 6211                 |         andq %rcx, %rcx			# test *src to see whether the value is less than 0
-0x082: 715602000000000000   |         jle Done             # if not greater than 0, jump
-0x08b: c0f00100000000000000 |         iaddq $1, %rax			# add the count of postive numbers
-0x095: 90                   |     	ret
+0x076: 40160000000000000000 |     rmmovq %rcx, (%rsi)		# save the value to the destination memory
+0x080: 6211                 |     andq %rcx, %rcx			# test *src to see whether the value is less than 0
+0x082: 715602000000000000   |     jle Done                # if not greater than 0, jump
+0x08b: c0f00100000000000000 |     iaddq $1, %rax			# add the count of postive numbers
+0x095: 90                   |     ret
                             | 
 0x096:                      | RemAddFirstNotEnd:
-                            | 
 0x096: 40160000000000000000 |     rmmovq %rcx, (%rsi)		# save the value to the destination memory
 0x0a0: 6211                 |     andq %rcx, %rcx			# test *src to see whether the value is less than 0
 0x0a2: 71b500000000000000   |     jle RemAdd1             # if not greater than 0, jump
@@ -76,34 +71,34 @@
                             | 
 0x0b5:                      | RemAdd1:
 0x0b5: 50870800000000000000 |     mrmovq 8(%rdi), %r8		# save the second element from memory to register %r8
-0x0bf: 50971000000000000000 |     mrmovq 16(%rdi), %r9		# save the first element from memory to register %rcx
+0x0bf: 50971000000000000000 |     mrmovq 16(%rdi), %r9	# save the third element from memory to register %r9
 0x0c9: 40860800000000000000 |     rmmovq %r8, 8(%rsi)		# save the value to the destination memory
 0x0d3: 6288                 |     andq %r8, %r8			# test *src to see whether the value is less than 0
-0x0d5: 71e800000000000000   |     jle RemComp2             # if not greater than 0, jump
+0x0d5: 71e800000000000000   |     jle RemComp2            # if not greater than 0, jump
 0x0de: c0f00100000000000000 |     iaddq $1, %rax			# add the count of postive numbers
                             | 
 0x0e8:                      | RemComp2:
 0x0e8: c0f2ffffffffffffffff |     iaddq $-1, %rdx         # len = len - 1
-0x0f2: 76fc00000000000000   | 	jg RemAdd2          # if len > 0, then the work is not finished yet
+0x0f2: 76fc00000000000000   | 	jg RemAdd2              # if len > 0, then the work is not finished yet
 0x0fb: 90                   | 	ret
                             | 
 0x0fc:                      | RemAdd2:
-0x0fc: 50a71800000000000000 |     mrmovq 24(%rdi), %r10		# save the first element from memory to register %rcx
-0x106: 40961000000000000000 |     rmmovq %r9, 16(%rsi)		# save the value to the destination memory
-0x110: 6299                 |     andq %r9, %r9			# test *src to see whether the value is less than 0
-0x112: 712501000000000000   |     jle RemComp3             # if not greater than 0, jump
-0x11b: c0f00100000000000000 |     iaddq $1, %rax			# add the count of postive numbers
+0x0fc: 50a71800000000000000 |     mrmovq 24(%rdi), %r10	# save the forth element from memory to register %rcx
+0x106: 40961000000000000000 |     rmmovq %r9, 16(%rsi)	# save the value to the destination memory
+0x110: 6299                 |     andq %r9, %r9           # test *src to see whether the value is less than 0
+0x112: 712501000000000000   |     jle RemComp3            # if not greater than 0, jump
+0x11b: c0f00100000000000000 |     iaddq $1, %rax          # add the count of postive numbers
                             | 
 0x125:                      | RemComp3:
 0x125: c0f2ffffffffffffffff |     iaddq $-1, %rdx         # len = len - 1
-0x12f: 763901000000000000   | 	jg RemAdd3          # if len > 0, then the work is not finished yet
+0x12f: 763901000000000000   | 	jg RemAdd3              # if len > 0, then the work is not finished yet
 0x138: 90                   | 	ret
                             | 
 0x139:                      | RemAdd3:
                             | 
-0x139: 40a61800000000000000 |     rmmovq %r10, 24(%rsi)		# save the value to the destination memory
+0x139: 40a61800000000000000 |     rmmovq %r10, 24(%rsi)	# save the value to the destination memory
 0x143: 62aa                 |     andq %r10, %r10			# test *src to see whether the value is less than 0
-0x145: 715602000000000000   |     jle Done             # if not greater than 0, jump
+0x145: 715602000000000000   |     jle Done                # if not greater than 0, jump
 0x14e: c0f00100000000000000 |     iaddq $1, %rax			# add the count of postive numbers
 0x158: 90                   | 	ret
                             | 
@@ -163,9 +158,9 @@
                             | ###############################
 0x258:                      | 	.align 8
 0x258:                      | src:
-0x258: 0100000000000000     | 	.quad 1
+0x258: ffffffffffffffff     | 	.quad -1
 0x260: 0200000000000000     | 	.quad 2
-0x268: fdffffffffffffff     | 	.quad -3
+0x268: 0300000000000000     | 	.quad 3
 0x270: fcffffffffffffff     | 	.quad -4
 0x278: fadebc0000000000     | 	.quad 0xbcdefa # This shouldn't get moved
                             | 
