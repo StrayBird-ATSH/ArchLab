@@ -20,10 +20,10 @@
 # have the best correct possibilities.
 # 4. For the remaining parts, avoiding data hazard is also paid attention to
 # so as to elevate the efficiency.
-# 5. In order to eliminate the overhead of minusing and comparing the value of
+# 5. In order to eliminate the overhead of minus and comparing the value of
 # len in the remaining parts, a 3-ary tree is taken advantage of to quickly find
 # the correct place to start the copying and the process will terminate in the
-# specified steps without further comparision. Furthermore, the add %rax value
+# specified steps without further comparison. Furthermore, the add %rax value
 # instruction has also got changed position so as to eliminate bubbles.
 #
 ##################################################################
@@ -179,7 +179,6 @@ RemAdd4Rax:
     rmmovq %r11, 24(%rsi)	# save the value to the destination memory
     andq %r11, %r11         # test *src to see whether the value is less than 0
 
-
 RemAdd3:
     mrmovq 16(%rdi), %r8	# save the third element from memory to register %r8
     jle RemAdd3Rax          # if not greater than 0, jump
@@ -188,7 +187,6 @@ RemAdd3Rax:
     rmmovq %r8, 16(%rsi)	# save the value to the destination memory
     andq %r8, %r8           # test *src to see whether the value is less than 0
 
-
 RemAdd2:
     mrmovq 8(%rdi), %r9     # save the second element from memory to register %r9
     jle RemAdd2Rax          # if not greater than 0, jump
@@ -196,7 +194,6 @@ RemAdd2:
 RemAdd2Rax:
     rmmovq %r9, 8(%rsi)     # save the value to the destination memory
     andq %r9, %r9           # test *src to see whether the value is less than 0
-
 
 RemAdd1:
     mrmovq (%rdi), %rcx		# save the first element from memory to register %rcx
