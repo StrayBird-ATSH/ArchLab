@@ -2,12 +2,12 @@
                             | # Test for copying block of size 4;
                             | #######################################################################
 0x000:                      | 	.pos 0
-0x000: 30f4a004000000000000 | main:	irmovq Stack, %rsp  	# Set up stack pointer
+0x000: 30f4b004000000000000 | main:	irmovq Stack, %rsp  	# Set up stack pointer
                             | 
                             | 	# Set up arguments for copy function and then invoke it
 0x00a: 30f20400000000000000 | 	irmovq $4, %rdx		# src and dst have 4 elements
-0x014: 30f6f803000000000000 | 	irmovq dest, %rsi	# dst array
-0x01e: 30f7c803000000000000 | 	irmovq src, %rdi	# src array
+0x014: 30f60804000000000000 | 	irmovq dest, %rsi	# dst array
+0x01e: 30f7d003000000000000 | 	irmovq src, %rdi	# src array
 0x028: 803200000000000000   | 	call ncopy		 
 0x031: 00                   | 	halt			# should halt with num nonzeros in %rax
 0x032:                      | StartFun:
@@ -21,7 +21,7 @@
                             | #
                             | # Describe how and why you modified the baseline code.
                             | # The original baseline code is modified in great extension from the following 
-                            | # four perspectives:
+                            | # five perspectives:
                             | # 1. The straightforward loop is unrolled into nine continuous executions.
                             | # Therefore, if the data is longer than 9, each loop will do nine continuous
                             | # copy actions, which can greatly reduce the number of iterations thus reducing 
@@ -33,6 +33,11 @@
                             | # have the best correct possibilities.
                             | # 4. For the remaining parts, avoiding data hazard is also paid attention to
                             | # so as to elevate the efficiency.
+                            | # 5. In order to eliminate the overhead of minusing and comparing the value of
+                            | # len in the remaining parts, a 3-ary tree is taken advantage of to quickly find
+                            | # the correct place to start the copying and the process will terminate in the
+                            | # specified steps without further comparision. Furthermore, the add %rax value
+                            | # instruction has also got changed position so as to eliminate bubbles.
                             | #
                             | ##################################################################
                             | # Do not modify this portion
@@ -121,126 +126,137 @@
                             | 
 0x1dd:                      | Continue:
 0x1dd: c0f20500000000000000 |     iaddq $5, %rdx
-0x1e7: 50170000000000000000 |     mrmovq (%rdi), %rcx		# save the first element from memory to register %rcx
-0x1f1: 720c02000000000000   |     jl LessThan3
-0x1fa: 762902000000000000   |     jg GreaterThan3
-0x203: 705303000000000000   |     jmp RemAdd3
+0x1e7: 720202000000000000   |     jl LessThan3
+0x1f0: 762902000000000000   |     jg GreaterThan3
+0x1f9: 704003000000000000   |     jmp RemAdd3
                             | 
-0x20c:                      | LessThan3:
-0x20c: c0f20200000000000000 |     iaddq $2, %rdx
-0x216: 73a503000000000000   |     je RemAdd1
-0x21f: 767c03000000000000   |     jg RemAdd2
+0x202:                      | LessThan3:
+0x202: c0f20200000000000000 |     iaddq $2, %rdx
+0x20c: 739203000000000000   |     je RemAdd1
+0x215: c0f2ffffffffffffffff |     iaddq $-1, %rdx
+0x21f: 736903000000000000   |     je RemAdd2
 0x228: 90                   |     ret
                             | 
 0x229:                      | GreaterThan3:
 0x229: c0f2fdffffffffffffff |     iaddq $-3, %rdx
 0x233: 724e02000000000000   |     jl FourAndFive
 0x23c: 766a02000000000000   |     jg SevenAndEight
-0x245: 70d802000000000000   |     jmp RemAdd6
+0x245: 70c502000000000000   |     jmp RemAdd6
                             | 
 0x24e:                      | FourAndFive:
-0x24e: c0f20200000000000000 |     iaddq $2, %rdx
-0x258: 732a03000000000000   |     je RemAdd4
-0x261: 700103000000000000   |     jmp RemAdd5
+0x24e: c0f20100000000000000 |     iaddq $1, %rdx
+0x258: 721703000000000000   |     jl RemAdd4
+0x261: 70ee02000000000000   |     jmp RemAdd5
                             | 
 0x26a:                      | SevenAndEight:
 0x26a: c0f2feffffffffffffff |     iaddq $-2, %rdx
-0x274: 72af02000000000000   |     jl RemAdd7
+0x274: 729c02000000000000   |     jl RemAdd7
 0x27d: 708602000000000000   |     jmp RemAdd8
                             | 
+                            | ########-----Tree Separator-------################################
+                            | 
 0x286:                      | RemAdd8:
-0x286: 50b73800000000000000 |     mrmovq 56(%rdi), %r11	# save the second element from memory to register %r11
+0x286: 50b73800000000000000 |     mrmovq 56(%rdi), %r11	# save the eighth element from memory to register %r11
 0x290: 40b63800000000000000 |     rmmovq %r11, 56(%rsi)	# save the value to the destination memory
 0x29a: 62bb                 |     andq %r11, %r11			# test *src to see whether the value is less than 0
-0x29c: 71af02000000000000   |     jle RemAdd7             # if not greater than 0, jump
-0x2a5: c0f00100000000000000 |     iaddq $1, %rax			# add the count of postive numbers
                             | 
-0x2af:                      | RemAdd7:
-0x2af: 50873000000000000000 |     mrmovq 48(%rdi), %r8	# save the third element from memory to register %r8
+0x29c:                      | RemAdd7:
+0x29c: 50873000000000000000 |     mrmovq 48(%rdi), %r8	# save the seventh element from memory to register %r8
+0x2a6: 71b902000000000000   |     jle RemAdd7Rax          # if not greater than 0, jump
+0x2af: c0f00100000000000000 |     iaddq $1, %rax			# add the count of postive numbers
+0x2b9:                      | RemAdd7Rax:
 0x2b9: 40863000000000000000 |     rmmovq %r8, 48(%rsi)	# save the value to the destination memory
 0x2c3: 6288                 |     andq %r8, %r8			# test *src to see whether the value is less than 0
-0x2c5: 71d802000000000000   |     jle RemAdd6             # if not greater than 0, jump
-0x2ce: c0f00100000000000000 |     iaddq $1, %rax			# add the count of postive numbers
                             | 
-0x2d8:                      | RemAdd6:
-0x2d8: 50972800000000000000 |     mrmovq 40(%rdi), %r9	# save the forth element from memory to register %r9
+0x2c5:                      | RemAdd6:
+0x2c5: 50972800000000000000 |     mrmovq 40(%rdi), %r9	# save the sixth element from memory to register %r9
+0x2cf: 71e202000000000000   |     jle RemAdd6Rax          # if not greater than 0, jump
+0x2d8: c0f00100000000000000 |     iaddq $1, %rax			# add the count of postive numbers
+0x2e2:                      | RemAdd6Rax:
 0x2e2: 40962800000000000000 |     rmmovq %r9, 40(%rsi)	# save the value to the destination memory
 0x2ec: 6299                 |     andq %r9, %r9			# test *src to see whether the value is less than 0
-0x2ee: 710103000000000000   |     jle RemAdd5             # if not greater than 0, jump
-0x2f7: c0f00100000000000000 |     iaddq $1, %rax			# add the count of postive numbers
                             | 
-0x301:                      | RemAdd5:
-0x301: 50a72000000000000000 |     mrmovq 32(%rdi), %r10	# save the fifth element from memory to register %r10
+0x2ee:                      | RemAdd5:
+0x2ee: 50a72000000000000000 |     mrmovq 32(%rdi), %r10	# save the fifth element from memory to register %r10
+0x2f8: 710b03000000000000   |     jle RemAdd5Rax          # if not greater than 0, jump
+0x301: c0f00100000000000000 |     iaddq $1, %rax			# add the count of postive numbers
+0x30b:                      | RemAdd5Rax:
 0x30b: 40a62000000000000000 |     rmmovq %r10, 32(%rsi)	# save the value to the destination memory
 0x315: 62aa                 |     andq %r10, %r10         # test *src to see whether the value is less than 0
-0x317: 712a03000000000000   |     jle RemAdd4             # if not greater than 0, jump
-0x320: c0f00100000000000000 |     iaddq $1, %rax          # add the count of postive numbers
                             | 
-0x32a:                      | RemAdd4:
-0x32a: 50b71800000000000000 |     mrmovq 24(%rdi), %r11   # save the sixth element from memory to register %r11
+0x317:                      | RemAdd4:
+0x317: 50b71800000000000000 |     mrmovq 24(%rdi), %r11   # save the forth element from memory to register %r11
+0x321: 713403000000000000   |     jle RemAdd4Rax          # if not greater than 0, jump
+0x32a: c0f00100000000000000 |     iaddq $1, %rax          # add the count of postive numbers
+0x334:                      | RemAdd4Rax:
 0x334: 40b61800000000000000 |     rmmovq %r11, 24(%rsi)	# save the value to the destination memory
 0x33e: 62bb                 |     andq %r11, %r11         # test *src to see whether the value is less than 0
-0x340: 715303000000000000   |     jle RemAdd3             # if not greater than 0, jump
-0x349: c0f00100000000000000 |     iaddq $1, %rax          # add the count of postive numbers
                             | 
-0x353:                      | RemAdd3:
-0x353: 50871000000000000000 |     mrmovq 16(%rdi), %r8	# save the seventh element from memory to register %r8
+                            | 
+0x340:                      | RemAdd3:
+0x340: 50871000000000000000 |     mrmovq 16(%rdi), %r8	# save the third element from memory to register %r8
+0x34a: 715d03000000000000   |     jle RemAdd3Rax          # if not greater than 0, jump
+0x353: c0f00100000000000000 |     iaddq $1, %rax          # add the count of postive numbers
+0x35d:                      | RemAdd3Rax:
 0x35d: 40861000000000000000 |     rmmovq %r8, 16(%rsi)	# save the value to the destination memory
 0x367: 6288                 |     andq %r8, %r8           # test *src to see whether the value is less than 0
-0x369: 717c03000000000000   |     jle RemAdd2             # if not greater than 0, jump
-0x372: c0f00100000000000000 |     iaddq $1, %rax          # add the count of postive numbers
                             | 
-0x37c:                      | RemAdd2:
-0x37c: 50970800000000000000 |     mrmovq 8(%rdi), %r9     # save the eighth element from memory to register %r9
+                            | 
+0x369:                      | RemAdd2:
+0x369: 50970800000000000000 |     mrmovq 8(%rdi), %r9     # save the second element from memory to register %r9
+0x373: 718603000000000000   |     jle RemAdd2Rax          # if not greater than 0, jump
+0x37c: c0f00100000000000000 |     iaddq $1, %rax          # add the count of postive numbers
+0x386:                      | RemAdd2Rax:
 0x386: 40960800000000000000 |     rmmovq %r9, 8(%rsi)     # save the value to the destination memory
 0x390: 6299                 |     andq %r9, %r9           # test *src to see whether the value is less than 0
-0x392: 71a503000000000000   |     jle RemAdd1             # if not greater than 0, jump
-0x39b: c0f00100000000000000 |     iaddq $1, %rax          # add the count of postive numbers
                             | 
-0x3a5:                      | RemAdd1:
-0x3a5: 40160000000000000000 |     rmmovq %rcx, (%rsi)     # save the value to the destination memory
-0x3af: 6211                 |     andq %rcx, %rcx			# test *src to see whether the value is less than 0
-0x3b1: 71c503000000000000   |     jle Done                # if not greater than 0, jump
-0x3ba: c0f00100000000000000 |     iaddq $1, %rax			# add the count of postive numbers
-0x3c4: 90                   | 	ret
+                            | 
+0x392:                      | RemAdd1:
+0x392: 50170000000000000000 |     mrmovq (%rdi), %rcx		# save the first element from memory to register %rcx
+0x39c: 71af03000000000000   |      jle RemAdd1Rax         # if not greater than 0, jump
+0x3a5: c0f00100000000000000 |      iaddq $1, %rax         # add the count of postive numbers
+0x3af:                      | RemAdd1Rax:
+0x3af: 40160000000000000000 |     rmmovq %rcx, (%rsi)     # save the value to the destination memory
+0x3b9: 6211                 |     andq %rcx, %rcx			# test *src to see whether the value is less than 0
+0x3bb: 71cf03000000000000   |     jle Done                # if not greater than 0, jump
+0x3c4: c0f00100000000000000 |     iaddq $1, %rax			# add the count of postive numbers
+0x3ce: 90                   | 	ret
                             | 
                             | ##################################################################
                             | # Do not modify the following section of code
                             | # Function epilogue.
-0x3c5:                      | Done:
-0x3c5: 90                   | 	ret
+0x3cf:                      | Done:
+0x3cf: 90                   | 	ret
                             | ##################################################################
                             | # Keep the following label at the end of your function
-0x3c6:                      | End:
+0x3d0:                      | End:
                             | #/* $end ncopy-ys */
-0x3c6:                      | EndFun:
+0x3d0:                      | EndFun:
                             | 
                             | ###############################
                             | # Source and destination blocks 
                             | ###############################
-0x3c8:                      | 	.align 8
-0x3c8:                      | src:
-0x3c8: ffffffffffffffff     | 	.quad -1
-0x3d0: 0200000000000000     | 	.quad 2
-0x3d8: 0300000000000000     | 	.quad 3
-0x3e0: fcffffffffffffff     | 	.quad -4
-0x3e8: fadebc0000000000     | 	.quad 0xbcdefa # This shouldn't get moved
+0x3d0:                      | 	.align 8
+0x3d0:                      | src:
+0x3d0: ffffffffffffffff     | 	.quad -1
+0x3d8: feffffffffffffff     | 	.quad -2
+0x3e0: 0300000000000000     | 	.quad 3
+0x3e8: 0400000000000000     | 	.quad 4
+0x3f0: fadebc0000000000     | 	.quad 0xbcdefa # This shouldn't get moved
                             | 
-0x3f0:                      | 	.align 16
-0x3f0:                      | Predest:
-0x3f0: fadebc0000000000     | 	.quad 0xbcdefa
-0x3f8:                      | dest:
-0x3f8: abefcd0000000000     | 	.quad 0xcdefab
-0x400: abefcd0000000000     | 	.quad 0xcdefab
+0x400:                      | 	.align 16
+0x400:                      | Predest:
+0x400: fadebc0000000000     | 	.quad 0xbcdefa
+0x408:                      | dest:
 0x408: abefcd0000000000     | 	.quad 0xcdefab
 0x410: abefcd0000000000     | 	.quad 0xcdefab
-0x418:                      | Postdest:
-0x418: bcfade0000000000     | 	.quad 0xdefabc
+0x418: abefcd0000000000     | 	.quad 0xcdefab
+0x420: abefcd0000000000     | 	.quad 0xcdefab
+0x428:                      | Postdest:
+0x428: bcfade0000000000     | 	.quad 0xdefabc
                             | 
-0x420:                      | .align 8
+0x430:                      | .align 8
                             | # Run time stack
-0x420: 0000000000000000     | 	.quad 0
-0x428: 0000000000000000     | 	.quad 0
 0x430: 0000000000000000     | 	.quad 0
 0x438: 0000000000000000     | 	.quad 0
 0x440: 0000000000000000     | 	.quad 0
@@ -255,5 +271,7 @@
 0x488: 0000000000000000     | 	.quad 0
 0x490: 0000000000000000     | 	.quad 0
 0x498: 0000000000000000     | 	.quad 0
+0x4a0: 0000000000000000     | 	.quad 0
+0x4a8: 0000000000000000     | 	.quad 0
                             | 
-0x4a0:                      | Stack:
+0x4b0:                      | Stack:

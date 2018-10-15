@@ -21,7 +21,7 @@ StartFun:
 #
 # Describe how and why you modified the baseline code.
 # The original baseline code is modified in great extension from the following 
-# four perspectives:
+# five perspectives:
 # 1. The straightforward loop is unrolled into nine continuous executions.
 # Therefore, if the data is longer than 9, each loop will do nine continuous
 # copy actions, which can greatly reduce the number of iterations thus reducing 
@@ -33,6 +33,11 @@ StartFun:
 # have the best correct possibilities.
 # 4. For the remaining parts, avoiding data hazard is also paid attention to
 # so as to elevate the efficiency.
+# 5. In order to eliminate the overhead of minusing and comparing the value of
+# len in the remaining parts, a 3-ary tree is taken advantage of to quickly find
+# the correct place to start the copying and the process will terminate in the
+# specified steps without further comparision. Furthermore, the add %rax value
+# instruction has also got changed position so as to eliminate bubbles.
 #
 ##################################################################
 # Do not modify this portion
@@ -121,7 +126,6 @@ LoopJmp9:
 
 Continue:
     iaddq $5, %rdx
-    mrmovq (%rdi), %rcx		# save the first element from memory to register %rcx
     jl LessThan3
     jg GreaterThan3
     jmp RemAdd3
@@ -129,7 +133,8 @@ Continue:
 LessThan3:
     iaddq $2, %rdx
     je RemAdd1
-    jg RemAdd2
+    iaddq $-1, %rdx
+    je RemAdd2
     ret
 
 GreaterThan3:
@@ -139,8 +144,8 @@ GreaterThan3:
     jmp RemAdd6
 
 FourAndFive:
-    iaddq $2, %rdx
-    je RemAdd4
+    iaddq $1, %rdx
+    jl RemAdd4
     jmp RemAdd5
 
 SevenAndEight:
@@ -148,56 +153,69 @@ SevenAndEight:
     jl RemAdd7
     jmp RemAdd8
 
+########-----Tree Separator-------################################
+
 RemAdd8:
-    mrmovq 56(%rdi), %r11	# save the second element from memory to register %r11
+    mrmovq 56(%rdi), %r11	# save the eighth element from memory to register %r11
     rmmovq %r11, 56(%rsi)	# save the value to the destination memory
     andq %r11, %r11			# test *src to see whether the value is less than 0
-    jle RemAdd7             # if not greater than 0, jump
-    iaddq $1, %rax			# add the count of postive numbers
 
 RemAdd7:
-    mrmovq 48(%rdi), %r8	# save the third element from memory to register %r8
+    mrmovq 48(%rdi), %r8	# save the seventh element from memory to register %r8
+    jle RemAdd7Rax          # if not greater than 0, jump
+    iaddq $1, %rax			# add the count of postive numbers
+RemAdd7Rax:
     rmmovq %r8, 48(%rsi)	# save the value to the destination memory
     andq %r8, %r8			# test *src to see whether the value is less than 0
-    jle RemAdd6             # if not greater than 0, jump
-    iaddq $1, %rax			# add the count of postive numbers
 
 RemAdd6:
-    mrmovq 40(%rdi), %r9	# save the forth element from memory to register %r9
+    mrmovq 40(%rdi), %r9	# save the sixth element from memory to register %r9
+    jle RemAdd6Rax          # if not greater than 0, jump
+    iaddq $1, %rax			# add the count of postive numbers
+RemAdd6Rax:
     rmmovq %r9, 40(%rsi)	# save the value to the destination memory
     andq %r9, %r9			# test *src to see whether the value is less than 0
-    jle RemAdd5             # if not greater than 0, jump
-    iaddq $1, %rax			# add the count of postive numbers
 
 RemAdd5:
     mrmovq 32(%rdi), %r10	# save the fifth element from memory to register %r10
+    jle RemAdd5Rax          # if not greater than 0, jump
+    iaddq $1, %rax			# add the count of postive numbers
+RemAdd5Rax:
     rmmovq %r10, 32(%rsi)	# save the value to the destination memory
     andq %r10, %r10         # test *src to see whether the value is less than 0
-    jle RemAdd4             # if not greater than 0, jump
-    iaddq $1, %rax          # add the count of postive numbers
 
 RemAdd4:
-    mrmovq 24(%rdi), %r11   # save the sixth element from memory to register %r11
+    mrmovq 24(%rdi), %r11   # save the forth element from memory to register %r11
+    jle RemAdd4Rax          # if not greater than 0, jump
+    iaddq $1, %rax          # add the count of postive numbers
+RemAdd4Rax:
     rmmovq %r11, 24(%rsi)	# save the value to the destination memory
     andq %r11, %r11         # test *src to see whether the value is less than 0
-    jle RemAdd3             # if not greater than 0, jump
-    iaddq $1, %rax          # add the count of postive numbers
+
 
 RemAdd3:
-    mrmovq 16(%rdi), %r8	# save the seventh element from memory to register %r8
+    mrmovq 16(%rdi), %r8	# save the third element from memory to register %r8
+    jle RemAdd3Rax          # if not greater than 0, jump
+    iaddq $1, %rax          # add the count of postive numbers
+RemAdd3Rax:
     rmmovq %r8, 16(%rsi)	# save the value to the destination memory
     andq %r8, %r8           # test *src to see whether the value is less than 0
-    jle RemAdd2             # if not greater than 0, jump
-    iaddq $1, %rax          # add the count of postive numbers
+
 
 RemAdd2:
-    mrmovq 8(%rdi), %r9     # save the eighth element from memory to register %r9
+    mrmovq 8(%rdi), %r9     # save the second element from memory to register %r9
+    jle RemAdd2Rax          # if not greater than 0, jump
+    iaddq $1, %rax          # add the count of postive numbers
+RemAdd2Rax:
     rmmovq %r9, 8(%rsi)     # save the value to the destination memory
     andq %r9, %r9           # test *src to see whether the value is less than 0
-    jle RemAdd1             # if not greater than 0, jump
-    iaddq $1, %rax          # add the count of postive numbers
+
 
 RemAdd1:
+    mrmovq (%rdi), %rcx		# save the first element from memory to register %rcx
+     jle RemAdd1Rax         # if not greater than 0, jump
+     iaddq $1, %rax         # add the count of postive numbers
+RemAdd1Rax:
     rmmovq %rcx, (%rsi)     # save the value to the destination memory
     andq %rcx, %rcx			# test *src to see whether the value is less than 0
     jle Done                # if not greater than 0, jump
@@ -220,68 +238,68 @@ EndFun:
 ###############################
 	.align 8
 src:
-	.quad -1
+	.quad 1
 	.quad 2
-	.quad 3
-	.quad 4
+	.quad -3
+	.quad -4
 	.quad 5
 	.quad 6
-	.quad 7
-	.quad -8
+	.quad -7
+	.quad 8
 	.quad -9
 	.quad 10
 	.quad 11
-	.quad 12
-	.quad 13
-	.quad 14
-	.quad 15
+	.quad -12
+	.quad -13
+	.quad -14
+	.quad -15
 	.quad -16
-	.quad 17
+	.quad -17
 	.quad 18
-	.quad -19
-	.quad 20
+	.quad 19
+	.quad -20
 	.quad 21
-	.quad -22
+	.quad 22
 	.quad -23
 	.quad -24
-	.quad 25
+	.quad -25
 	.quad -26
-	.quad 27
+	.quad -27
 	.quad 28
-	.quad -29
-	.quad -30
+	.quad 29
+	.quad 30
 	.quad -31
-	.quad -32
+	.quad 32
 	.quad -33
 	.quad -34
 	.quad 35
 	.quad 36
-	.quad -37
-	.quad 38
+	.quad 37
+	.quad -38
 	.quad 39
 	.quad -40
 	.quad 41
-	.quad 42
-	.quad -43
-	.quad -44
+	.quad -42
+	.quad 43
+	.quad 44
 	.quad -45
 	.quad -46
 	.quad -47
-	.quad 48
-	.quad -49
-	.quad 50
+	.quad -48
+	.quad 49
+	.quad -50
 	.quad 51
 	.quad -52
 	.quad -53
 	.quad 54
-	.quad -55
-	.quad 56
-	.quad -57
+	.quad 55
+	.quad -56
+	.quad 57
 	.quad -58
 	.quad 59
-	.quad -60
-	.quad -61
-	.quad -62
+	.quad 60
+	.quad 61
+	.quad 62
 	.quad -63
 	.quad 0xbcdefa # This shouldn't get moved
 
