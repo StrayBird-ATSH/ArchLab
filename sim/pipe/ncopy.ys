@@ -31,7 +31,7 @@ ncopy:
 # You can modify this portion
 # Loop header
     iaddq $-8, %rdx         # len = len - 8
-	jle Remaining           # if len > 0, then go to Loop
+	jle Continue           # if len > 0, then go to Loop
 
 ########-----Loop Separator-------################################
 
@@ -88,14 +88,14 @@ LoopJmp6:
 	iaddq $1, %rax          # add the number of postive numbers
 
 LoopJmp7:
-	rmmovq %r10, -16(%rsi)  # save the seventh value to the destination memory
+	rmmovq %r10, -16(%rsi)  # save the eighth value to the destination memory
 	mrmovq -8(%rdi), %r11   # to avoid load/use hazard, this read memory instruction is advanced
 	andq %r10, %r10         # test for future reference
 	jle LoopJmp8            # if the value is no greater than 0, then do not increment %rax
 	iaddq $1, %rax          # add the number of postive numbers
 
 LoopJmp8:
-	rmmovq %r11, -8(%rsi)   # save the eighth value to the destination memory
+	rmmovq %r11, -8(%rsi)   # save the ninth value to the destination memory
 	andq %r11, %r11         # test to see if the value is no greater than 0
 	jle LoopJmp9
 	iaddq $1, %rax          # add the number of postive numbers
@@ -106,108 +106,90 @@ LoopJmp9:
 
 ########-----Loop Separator-------################################
 
-
-Remaining:
-    iaddq $8, %rdx
-    jg Continue
-    ret
-
 Continue:
+    iaddq $5, %rdx
     mrmovq (%rdi), %rcx		# save the first element from memory to register %rcx
-    iaddq $-1, %rdx         # len = len - 1
-    jg RemAddFirstNotEnd    # if len > 0, then the work is not finished yet
+    jl LessThan3
+    jg GreaterThan3
+    jmp RemAdd3
 
-RemAddFirstEnd:
-    rmmovq %rcx, (%rsi)		# save the value to the destination memory
-    andq %rcx, %rcx			# test *src to see whether the value is less than 0
-    jle Done                # if not greater than 0, jump
-    iaddq $1, %rax			# add the count of postive numbers
+LessThan3:
+    iaddq $2, %rdx
+    je RemAdd1
+    jg RemAdd2
     ret
 
-RemAddFirstNotEnd:
-    rmmovq %rcx, (%rsi)		# save the value to the destination memory
-    andq %rcx, %rcx			# test *src to see whether the value is less than 0
-    jle RemAdd1             # if not greater than 0, jump
+GreaterThan3:
+    iaddq $-3, %rdx
+    jl FourAndFive
+    jg SevenAndEight
+    jmp RemAdd6
+
+FourAndFive:
+    iaddq $2, %rdx
+    je RemAdd4
+    jmp RemAdd5
+
+SevenAndEight:
+    iaddq $-2, %rdx
+    jl RemAdd7
+    jmp RemAdd8
+
+RemAdd8:
+    mrmovq 56(%rdi), %r11	# save the second element from memory to register %r11
+    rmmovq %r11, 56(%rsi)	# save the value to the destination memory
+    andq %r11, %r11			# test *src to see whether the value is less than 0
+    jle RemAdd7             # if not greater than 0, jump
     iaddq $1, %rax			# add the count of postive numbers
-
-RemAdd1:
-    mrmovq 8(%rdi), %r8		# save the second element from memory to register %r8
-    mrmovq 16(%rdi), %r9	# save the third element from memory to register %r9
-    rmmovq %r8, 8(%rsi)		# save the value to the destination memory
-    andq %r8, %r8			# test *src to see whether the value is less than 0
-    jle RemComp2            # if not greater than 0, jump
-    iaddq $1, %rax			# add the count of postive numbers
-
-RemComp2:
-    iaddq $-1, %rdx         # len = len - 1
-	jg RemAdd2              # if len > 0, then the work is not finished yet
-	ret
-
-RemAdd2:
-    mrmovq 24(%rdi), %r10	# save the forth element from memory to register %r10
-    rmmovq %r9, 16(%rsi)	# save the value to the destination memory
-    andq %r9, %r9           # test *src to see whether the value is less than 0
-    jle RemComp3            # if not greater than 0, jump
-    iaddq $1, %rax          # add the count of postive numbers
-
-RemComp3:
-    iaddq $-1, %rdx         # len = len - 1
-	jg RemAdd3              # if len > 0, then the work is not finished yet
-	ret
-
-RemAdd3:
-    mrmovq 32(%rdi), %r11	# save the fifth element from memory to register %r11
-    rmmovq %r10, 24(%rsi)	# save the value to the destination memory
-    andq %r10, %r10         # test *src to see whether the value is less than 0
-    jle RemComp4            # if not greater than 0, jump
-    iaddq $1, %rax          # add the count of postive numbers
-
-RemComp4:
-    iaddq $-1, %rdx         # len = len - 1
-	jg RemAdd4              # if len > 0, then the work is not finished yet
-	ret
-
-RemAdd4:
-    mrmovq 40(%rdi), %rcx	# save the sixth element from memory to register %rcx
-    rmmovq %r11, 32(%rsi)	# save the value to the destination memory
-    andq %r11, %r11         # test *src to see whether the value is less than 0
-    jle RemComp5            # if not greater than 0, jump
-    iaddq $1, %rax          # add the count of postive numbers
-
-RemComp5:
-    iaddq $-1, %rdx         # len = len - 1
-	jg RemAdd5              # if len > 0, then the work is not finished yet
-	ret
-
-RemAdd5:
-    mrmovq 48(%rdi), %r8	# save the seventh element from memory to register %r8
-    rmmovq %rcx, 40(%rsi)	# save the value to the destination memory
-    andq %rcx, %rcx         # test *src to see whether the value is less than 0
-    jle RemComp6            # if not greater than 0, jump
-    iaddq $1, %rax          # add the count of postive numbers
-
-RemComp6:
-    iaddq $-1, %rdx         # len = len - 1
-	jg RemAdd6              # if len > 0, then the work is not finished yet
-	ret
-
-RemAdd6:
-    mrmovq 56(%rdi), %r9	# save the seventh element from memory to register %r8
-    rmmovq %r8, 48(%rsi)	# save the value to the destination memory
-    andq %r8, %r8           # test *src to see whether the value is less than 0
-    jle RemComp7            # if not greater than 0, jump
-    iaddq $1, %rax          # add the count of postive numbers
-
-RemComp7:
-    iaddq $-1, %rdx         # len = len - 1
-	jg RemAdd7              # if len > 0, then the work is not finished yet
-	ret
 
 RemAdd7:
-    rmmovq %r9, 56(%rsi)	# save the value to the destination memory
+    mrmovq 48(%rdi), %r8	# save the third element from memory to register %r8
+    rmmovq %r8, 48(%rsi)	# save the value to the destination memory
+    andq %r8, %r8			# test *src to see whether the value is less than 0
+    jle RemAdd6             # if not greater than 0, jump
+    iaddq $1, %rax			# add the count of postive numbers
+
+RemAdd6:
+    mrmovq 40(%rdi), %r9	# save the forth element from memory to register %r9
+    rmmovq %r9, 40(%rsi)	# save the value to the destination memory
     andq %r9, %r9			# test *src to see whether the value is less than 0
+    jle RemAdd5             # if not greater than 0, jump
+    iaddq $1, %rax			# add the count of postive numbers
+
+RemAdd5:
+    mrmovq 32(%rdi), %r10	# save the fifth element from memory to register %r10
+    rmmovq %r10, 32(%rsi)	# save the value to the destination memory
+    andq %r10, %r10         # test *src to see whether the value is less than 0
+    jle RemAdd4             # if not greater than 0, jump
+    iaddq $1, %rax          # add the count of postive numbers
+
+RemAdd4:
+    mrmovq 24(%rdi), %r11   # save the sixth element from memory to register %r11
+    rmmovq %r11, 24(%rsi)	# save the value to the destination memory
+    andq %r11, %r11         # test *src to see whether the value is less than 0
+    jle RemAdd3             # if not greater than 0, jump
+    iaddq $1, %rax          # add the count of postive numbers
+
+RemAdd3:
+    mrmovq 16(%rdi), %r8	# save the seventh element from memory to register %r8
+    rmmovq %r8, 16(%rsi)	# save the value to the destination memory
+    andq %r8, %r8           # test *src to see whether the value is less than 0
+    jle RemAdd2             # if not greater than 0, jump
+    iaddq $1, %rax          # add the count of postive numbers
+
+RemAdd2:
+    mrmovq 8(%rdi), %r9     # save the eighth element from memory to register %r9
+    rmmovq %r9, 8(%rsi)     # save the value to the destination memory
+    andq %r9, %r9           # test *src to see whether the value is less than 0
+    jle RemAdd1             # if not greater than 0, jump
+    iaddq $1, %rax          # add the count of postive numbers
+
+RemAdd1:
+    rmmovq %rcx, (%rsi)     # save the value to the destination memory
+    andq %rcx, %rcx			# test *src to see whether the value is less than 0
     jle Done                # if not greater than 0, jump
     iaddq $1, %rax			# add the count of postive numbers
+	ret
 
 ##################################################################
 # Do not modify the following section of code
