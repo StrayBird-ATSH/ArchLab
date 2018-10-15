@@ -43,79 +43,85 @@ ncopy:
 ##################################################################
 # You can modify this portion
 # Loop header
-    iaddq $-7, %rdx         # len = len - 7
+    iaddq $-8, %rdx         # len = len - 7
 	jle Remaining                 # if len > 0, then go to Loop
 
 ########-----Loop Separator-------################################
 
 Loop:
 	mrmovq (%rdi), %rcx	    # save the first element from memory to register %rcx
-	iaddq $64, %rdi		    # src = src + 8 (move 64 bytes, i.e. 8 words forward)
-	iaddq $64, %rsi			# dst = dst + 8 (move 64 bytes, i.e. 8 words forward)
-	mrmovq -56(%rdi), %r8	# save the second element from memory to register %r8
-	rmmovq %rcx, -64(%rsi)  # save the value to the destination memory
+	iaddq $72, %rdi		    # src = src + 9 (move 72 bytes, i.e. 8 words forward)
+	iaddq $72, %rsi			# dst = dst + 9 (move 72 bytes, i.e. 8 words forward)
+	mrmovq -64(%rdi), %r8	# save the second element from memory to register %r8
+	rmmovq %rcx, -72(%rsi)  # save the value to the destination memory
 	andq %rcx, %rcx		    # test %rcx
 	jle LoopJmp1			# if the value is no greater than 0, then do not increment %rax
 	iaddq $1, %rax		    # add the number of postive numbers
 
 LoopJmp1:
-	mrmovq -48(%rdi), %r9   # to avoid load/use hazard, this read memory instruction is advanced
-	rmmovq %r8, -56(%rsi)	# save the second value to the destination memory
+	mrmovq -56(%rdi), %r9   # to avoid load/use hazard, this read memory instruction is advanced
+	rmmovq %r8, -64(%rsi)	# save the second value to the destination memory
 	andq %r8, %r8			# test for future reference
-	mrmovq -40(%rdi), %r10  # to avoid load/use hazard, this read memory instruction is advanced
+	mrmovq -48(%rdi), %r10  # to avoid load/use hazard, this read memory instruction is advanced
 	jle LoopJmp2			# if the value is no greater than 0, then do not increment %rax
 	iaddq $1, %rax			# add the number of postive numbers
 
 LoopJmp2:
-	rmmovq %r9, -48(%rsi)   # save the third value to the destination memory
+	rmmovq %r9, -56(%rsi)   # save the third value to the destination memory
 	andq %r9, %r9           # test for future reference
-	mrmovq -32(%rdi), %r11  # to avoid load/use hazard, this read memory instruction is advanced
+	mrmovq -40(%rdi), %r11  # to avoid load/use hazard, this read memory instruction is advanced
 	jle LoopJmp3            # if the value is no greater than 0, then do not increment %rax
 	iaddq $1, %rax          # add the number of postive numbers
 
 LoopJmp3:
-	rmmovq %r10, -40(%rsi)  # save the forth value to the destination memory
+	rmmovq %r10, -48(%rsi)  # save the forth value to the destination memory
 	andq %r10, %r10         # test for future reference
 	jle LoopJmp4            # if the value is no greater than 0, then do not increment %rax
 	iaddq $1, %rax          # add the number of postive numbers
 
 LoopJmp4:
-	rmmovq %r11, -32(%rsi)  # save the fifth value to the destination memory
-	mrmovq -24(%rdi), %r8   # to avoid load/use hazard, this read memory instruction is advanced
+	rmmovq %r11, -40(%rsi)  # save the fifth value to the destination memory
+	mrmovq -32(%rdi), %r8   # to avoid load/use hazard, this read memory instruction is advanced
 	andq %r11, %r11         # test to see if the value is no greater than 0
 	jle LoopJmp5
 	iaddq $1, %rax          # add the number of postive numbers
 
 LoopJmp5:
-	rmmovq %r8, -24(%rsi)   # save the sixth value to the destination memory
+	rmmovq %r8, -32(%rsi)   # save the sixth value to the destination memory
 	andq %r8, %r8           # test for future reference
-	mrmovq -16(%rdi), %r9   # to avoid load/use hazard, this read memory instruction is advanced
+	mrmovq -24(%rdi), %r9   # to avoid load/use hazard, this read memory instruction is advanced
 	jle LoopJmp6            # if the value is no greater than 0, then do not increment %rax
 	iaddq $1, %rax          # add the number of postive numbers
 
 LoopJmp6:
-	rmmovq %r9, -16(%rsi)   # save the seventh value to the destination memory
-	mrmovq -8(%rdi), %r10   # to avoid load/use hazard, this read memory instruction is advanced
+	rmmovq %r9, -24(%rsi)   # save the seventh value to the destination memory
+	mrmovq -16(%rdi), %r10   # to avoid load/use hazard, this read memory instruction is advanced
 	andq %r9, %r9           # test for future reference
 	jle LoopJmp7            # if the value is no greater than 0, then do not increment %rax
 	iaddq $1, %rax          # add the number of postive numbers
 
 LoopJmp7:
-	rmmovq %r10, -8(%rsi)   # save the eighth value to the destination memory
-	andq %r10, %r10         # test to see if the value is no greater than 0
-	jle LoopJmp8
+	rmmovq %r10, -16(%rsi)   # save the seventh value to the destination memory
+	mrmovq -8(%rdi), %r11   # to avoid load/use hazard, this read memory instruction is advanced
+	andq %r10, %r10           # test for future reference
+	jle LoopJmp8            # if the value is no greater than 0, then do not increment %rax
 	iaddq $1, %rax          # add the number of postive numbers
 
 LoopJmp8:
-	iaddq $-8, %rdx			# len - 8 and then len > 0 ?
-	jg Loop					# if so, the loop will continue
+	rmmovq %r11, -8(%rsi)   # save the eighth value to the destination memory
+	andq %r11, %r11         # test to see if the value is no greater than 0
+	jle LoopJmp9
+	iaddq $1, %rax          # add the number of postive numbers
 
+LoopJmp9:
+	iaddq $-9, %rdx			# len - 9 and then len > 0 ?
+	jg Loop					# if so, the loop will continue
 
 ########-----Loop Separator-------################################
 
 
 Remaining:
-    iaddq $7, %rdx
+    iaddq $8, %rdx
     jg Continue
     ret
 
@@ -173,6 +179,7 @@ RemComp4:
     iaddq $-1, %rdx         # len = len - 1
 	jg RemAdd4              # if len > 0, then the work is not finished yet
 	ret
+
 RemAdd4:
     mrmovq 40(%rdi), %rcx	# save the sixth element from memory to register %rcx
     rmmovq %r11, 32(%rsi)	# save the value to the destination memory
@@ -198,8 +205,20 @@ RemComp6:
 	ret
 
 RemAdd6:
+    mrmovq 56(%rdi), %r9	# save the seventh element from memory to register %r8
     rmmovq %r8, 48(%rsi)	# save the value to the destination memory
-    andq %r8, %r8			# test *src to see whether the value is less than 0
+    andq %r8, %r8         # test *src to see whether the value is less than 0
+    jle RemComp7            # if not greater than 0, jump
+    iaddq $1, %rax          # add the count of postive numbers
+
+RemComp7:
+    iaddq $-1, %rdx         # len = len - 1
+	jg RemAdd7              # if len > 0, then the work is not finished yet
+	ret
+
+RemAdd7:
+    rmmovq %r9, 56(%rsi)	# save the value to the destination memory
+    andq %r9, %r9			# test *src to see whether the value is less than 0
     jle Done                # if not greater than 0, jump
     iaddq $1, %rax			# add the count of postive numbers
 
@@ -219,10 +238,10 @@ EndFun:
 ###############################
 	.align 8
 src:
-	.quad 1
-	.quad 2
-	.quad -3
-	.quad -4
+	.quad -1
+	.quad -2
+	.quad 3
+	.quad 4
 	.quad 0xbcdefa # This shouldn't get moved
 
 	.align 16
